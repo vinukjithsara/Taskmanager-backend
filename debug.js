@@ -1,0 +1,1 @@
+require('dotenv').config(); console.log("HOST:", process.env.MYSQL_HOST); console.log("USER:", process.env.MYSQL_USER);
