@@ -1,7 +1,9 @@
 require('dotenv').config({ path: __dirname + '/.env' });
-console.log("Connecting to:", process.env.MYSQL_HOST); // ← add this
+
+console.log("Connecting to:", process.env.MYSQL_HOST);
 
 const mysql = require("mysql2");
+
 const db = mysql.createConnection({
 
   host: process.env.MYSQL_HOST,
@@ -9,10 +11,13 @@ const db = mysql.createConnection({
   user: process.env.MYSQL_USER,
   password: process.env.MYSQL_PASSWORD,
   database: process.env.MYSQL_DATABASE,
+
+  timezone: "+05:30",
+
   ssl: { rejectUnauthorized: false }
 
 });
- 
+
 db.connect((err) => {
 
   if (err) {
@@ -21,6 +26,5 @@ db.connect((err) => {
     console.log("✅ MySQL Connected!");
   }
 });
- 
+
 module.exports = db;
- 
