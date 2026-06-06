@@ -1,30 +1,11 @@
-require('dotenv').config({ path: __dirname + '/.env' });
-
-console.log("Connecting to:", process.env.MYSQL_HOST);
-
-const mysql = require("mysql2");
-
-const db = mysql.createConnection({
-
-  host: process.env.MYSQL_HOST,
-  port: process.env.MYSQL_PORT,
-  user: process.env.MYSQL_USER,
-  password: process.env.MYSQL_PASSWORD,
-  database: process.env.MYSQL_DATABASE,
-
-  timezone: "+05:30",
-
-  ssl: { rejectUnauthorized: false }
-
+const { Pool } = require("pg");
+ 
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
 });
-
-db.connect((err) => {
-
-  if (err) {
-    console.log("❌ DB Error:", err);
-  } else {
-    console.log("✅ MySQL Connected!");
-  }
-});
-
-module.exports = db;
+ 
+module.exports = {
+  query: (text, params, callback) => pool.query(text, params, callback),
+};
+ 
