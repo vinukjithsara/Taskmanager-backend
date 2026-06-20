@@ -209,7 +209,7 @@ cron.schedule("* * * * *", () => {
  
         /* ================= 24 HOURS ================= */
         if (diffMin <= 1440 && diffMin > 1380 && !sent.includes("24h")) {
-          await sendReminder(
+          await sendReminder(e
             "⏰ WorkTrack Reminder",
             "Your task deadline is in 24 hours.",
             "24h",
