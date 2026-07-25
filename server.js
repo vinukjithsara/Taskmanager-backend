@@ -6,7 +6,6 @@ const app = express();
 const db = require("./db");
 const cron = require("node-cron");
 const Groq = require("groq-sdk");
-
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
  
 app.use(express.json());
