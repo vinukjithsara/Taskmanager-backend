@@ -5,6 +5,9 @@ const sendEmail = require("./mailer");
 const app = express();
 const db = require("./db");
 const cron = require("node-cron");
+const Groq = require("groq-sdk");
+
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
  
 app.use(express.json());
 app.use(
@@ -129,7 +132,56 @@ app.delete("/api/tasks/:id", (req, res) => {
     }
   );
 });
- 
+
+/* ================= AI CHATBOT ================= */
+app.post("/api/chatbot", async (req, res) => {
+  const { message, userId } = req.body;
+  if (!message || !userId) {
+    return res.status(400).json({ message: "Message and userId are required" });
+  }
+
+  db.query(
+    "SELECT title,description,status,created_at,due_datetime,reminder_sent FROM tasks WHERE user_id=$1 ORDER BY id DESC",
+    [userId],
+    async (err, result) => {
+      if (err) {
+        console.error("DB error:", err);
+        return res.status(500).json({ error: "Could not fetch tasks" });
+      }
+
+      const tasks = result.rows;
+      const taskContext = tasks.length > 0 ? JSON.stringify(tasks, null, 2) : "No tasks found.";
+      const systemPrompt = `You are a helpful task management assistant for WorkTrack. The user's current tasks are listed below. Use them to answer their questions.
+
+TASKS:
+${taskContext} Today's date: ${new Date().toISOString().split("T")[0]}
+Keep answers short and friendly.`;
+
+      try {
+        const completion = await groq.chat.completions.create({
+          model: "llama-3.1-8b-instant",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: message },
+          ],
+          temperature: 0.7,
+        });
+
+        const reply = completion.choices[0].message.content;
+        res.json({ reply });
+      } catch (error) {
+        console.error("Groq error:", error.message);
+        res.status(500).json({ error: "AI service unavailable" });
+      }
+    }
+  );
+});
+let history = [
+  {
+    role: "system",
+    content: "You are a helpful assistant.",
+  },
+];
 /* ================= AUTO CHECKER ================= */
 cron.schedule("* * * * *", () => {
   console.log("Checking reminders...");
