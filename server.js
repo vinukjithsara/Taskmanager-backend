@@ -7,7 +7,23 @@ const db = require("./db");
 const cron = require("node-cron");
 const Groq = require("groq-sdk");
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
- 
+
+// due_datetime is stored as a naive "YYYY-MM-DD HH:mm:ss" string representing
+// Asia/Colombo (UTC+05:30) wall-clock time — see db.js. Parsing it with the
+// local Date constructor depends on whatever timezone the Node process itself
+// runs in, which on Render defaults to UTC, not Colombo, silently shifting
+// every reminder calculation by 5:30. Date.UTC() is timezone-independent, so
+// this always produces the correct real instant regardless of server TZ.
+const COLOMBO_OFFSET_MS = (5 * 60 + 30) * 60 * 1000;
+const parseColomboDatetime = (raw) => {
+  const [datePart, timePart] = raw.split(" ");
+  const [year, month, day] = datePart.split("-").map(Number);
+  const [hour, minute, second] = timePart.split(":").map(Number);
+  return new Date(
+    Date.UTC(year, month - 1, day, hour, minute, second) - COLOMBO_OFFSET_MS
+  );
+};
+
 app.use(express.json({ limit: "2mb" }));
 app.use(
   cors({
@@ -273,7 +289,7 @@ cron.schedule("* * * * *", () => {
       const now = new Date();
  
       for (const task of results.rows) {
-        const due = new Date(task.due_datetime.replace(" ", "T"));
+        const due = parseColomboDatetime(task.due_datetime);
         const diffMs = due - now;
         const diffMin = Math.floor(diffMs / 60000);
  
