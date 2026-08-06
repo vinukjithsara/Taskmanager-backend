@@ -8,7 +8,7 @@ const cron = require("node-cron");
 const Groq = require("groq-sdk");
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
  
-app.use(express.json());
+app.use(express.json({ limit: "2mb" }));
 app.use(
   cors({
     origin: process.env.FRONTEND_URL,
@@ -52,6 +52,79 @@ app.post("/api/login", (req, res) => {
   );
 });
  
+/* ================= GET USER PROFILE ================= */
+app.get("/api/users/:id", (req, res) => {
+  const id = req.params.id;
+
+  db.query(
+    "SELECT id, name, email, avatar FROM users WHERE id=$1",
+    [id],
+    (err, result) => {
+      if (err) return res.status(500).json(err);
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({ user: result.rows[0] });
+    }
+  );
+});
+
+/* ================= UPDATE USER PROFILE ================= */
+app.put("/api/users/:id", (req, res) => {
+  const id = req.params.id;
+  const { name, email, avatar, currentPassword, newPassword } = req.body;
+
+  const applyProfileUpdate = () => {
+    db.query(
+      "UPDATE users SET name=$1, email=$2, avatar=$3 WHERE id=$4",
+      [name, email, avatar, id],
+      (err) => {
+        if (err) return res.status(500).json(err);
+
+        db.query(
+          "SELECT id, name, email, avatar FROM users WHERE id=$1",
+          [id],
+          (err2, result) => {
+            if (err2) return res.status(500).json(err2);
+            res.json({ user: result.rows[0] });
+          }
+        );
+      }
+    );
+  };
+
+  if (newPassword) {
+    db.query(
+      "SELECT password FROM users WHERE id=$1",
+      [id],
+      (err, result) => {
+        if (err) return res.status(500).json(err);
+
+        if (result.rows.length === 0) {
+          return res.status(404).json({ message: "User not found" });
+        }
+
+        if (result.rows[0].password !== currentPassword) {
+          return res.status(401).json({ message: "Current password is incorrect" });
+        }
+
+        db.query(
+          "UPDATE users SET password=$1 WHERE id=$2",
+          [newPassword, id],
+          (err3) => {
+            if (err3) return res.status(500).json(err3);
+            applyProfileUpdate();
+          }
+        );
+      }
+    );
+  } else {
+    applyProfileUpdate();
+  }
+});
+
 /* ================= GET TASKS ================= */
 app.get("/api/tasks/:userId", (req, res) => {
   const userId = req.params.userId;
