@@ -296,55 +296,59 @@ cron.schedule("* * * * *", () => {
         const sent = task.reminder_sent || "";
  
         const sendReminder = async (subject, message, code, timeText) => {
-          await sendEmail(
-            task.email,
-            subject,
-            `
-            <div style="font-family:Arial,sans-serif;background:#f4f6f8;padding:30px;">
-              <div style="max-width:600px;margin:auto;background:white;border-radius:14px;padding:35px;text-align:center;box-shadow:0 12px 30px rgba(0,0,0,0.08);">
- 
-                <img
-                  src="https://raw.githubusercontent.com/vinukjithsara/Task-Maneger/main/src/assets/logo.png"
-                  style="width:220px;height:auto;border-radius:22px;margin-bottom:20px;"
-                />
- 
-                <h2 style="color:#111;">${subject}</h2>
- 
-                <p style="color:#555;font-size:16px;">
-                  ${message}
-                </p>
- 
-                <div style="background:#eef4ff;padding:18px;border-radius:10px;text-align:left;margin:25px 0;">
-                  <p><strong>Task:</strong> ${task.title}</p>
-                  <p><strong>Deadline:</strong> ${task.due_datetime}</p>
-                  <p><strong>Status:</strong> Pending</p>
-                  <p><strong>Time:</strong> ${timeText}</p>
+          try {
+            await sendEmail(
+              task.email,
+              subject,
+              `
+              <div style="font-family:Arial,sans-serif;background:#f4f6f8;padding:30px;">
+                <div style="max-width:600px;margin:auto;background:white;border-radius:14px;padding:35px;text-align:center;box-shadow:0 12px 30px rgba(0,0,0,0.08);">
+
+                  <img
+                    src="https://raw.githubusercontent.com/vinukjithsara/Task-Maneger/main/src/assets/logo.png"
+                    style="width:220px;height:auto;border-radius:22px;margin-bottom:20px;"
+                  />
+
+                  <h2 style="color:#111;">${subject}</h2>
+
+                  <p style="color:#555;font-size:16px;">
+                    ${message}
+                  </p>
+
+                  <div style="background:#eef4ff;padding:18px;border-radius:10px;text-align:left;margin:25px 0;">
+                    <p><strong>Task:</strong> ${task.title}</p>
+                    <p><strong>Deadline:</strong> ${task.due_datetime}</p>
+                    <p><strong>Status:</strong> Pending</p>
+                    <p><strong>Time:</strong> ${timeText}</p>
+                  </div>
+
+                  <a
+                    href="${process.env.FRONTEND_URL}/task"
+                    style="display:inline-block;background:#2563eb;color:white;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:bold;"
+                  >
+                    Open WorkTrack
+                  </a>
+
+                  <p style="margin-top:25px;font-size:12px;color:#888;">
+                    Sent automatically by WorkTrack
+                  </p>
+
                 </div>
- 
-                <a
-                  href="${process.env.FRONTEND_URL}/task"
-                  style="display:inline-block;background:#2563eb;color:white;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:bold;"
-                >
-                  Open WorkTrack
-                </a>
- 
-                <p style="margin-top:25px;font-size:12px;color:#888;">
-                  Sent automatically by WorkTrack
-                </p>
- 
               </div>
-            </div>
-            `
-          );
- 
-          db.query(
-            `UPDATE tasks
-             SET reminder_sent = COALESCE(reminder_sent, '') || $1 || ','
-             WHERE id=$2`,
-            [code, task.id]
-          );
- 
-          console.log(code + " sent:", task.title);
+              `
+            );
+
+            db.query(
+              `UPDATE tasks
+               SET reminder_sent = COALESCE(reminder_sent, '') || $1 || ','
+               WHERE id=$2`,
+              [code, task.id]
+            );
+
+            console.log(code + " sent:", task.title);
+          } catch (err) {
+            console.log(code + " FAILED to send for:", task.title, "-", err.message || err);
+          }
         };
  
         /* ================= 24 HOURS ================= */
