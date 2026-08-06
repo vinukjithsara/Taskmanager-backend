@@ -273,7 +273,7 @@ cron.schedule("* * * * *", () => {
       const now = new Date();
  
       for (const task of results.rows) {
-        const due = new Date(task.due_datetime);
+        const due = new Date(task.due_datetime.replace(" ", "T"));
         const diffMs = due - now;
         const diffMin = Math.floor(diffMs / 60000);
  
